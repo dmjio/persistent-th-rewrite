@@ -1,0 +1,60 @@
+cabal-version:
+  >=1.10
+name:
+  persistent-th-rewrite
+version:
+  0.1.0.0
+synopsis:
+  Purify Persistent Template Haskell via AST rewriting
+description:
+  Rewrite persistent Template Haskell into pure functions and definitions.
+bug-reports:
+  https://github.com/dmjio/persistent-th-rewrite
+license:
+  BSD3
+license-file:
+  LICENSE
+author:
+  David Johnson
+maintainer:
+  djohnson.m@gmail.com
+copyright:
+  David Johnson (c) 2020
+category:
+  Language
+build-type:
+  Simple
+extra-source-files:
+  CHANGELOG.md
+
+library
+  exposed-modules:
+    GHC.Plugin.PersistentThRewrite
+  build-depends:
+    base, lens, ghc, ghc-exactprint
+  hs-source-dirs:
+    src
+  default-language:
+    Haskell2010
+
+executable persistent-th-rewrite-pp
+  main-is:
+    Main.hs
+  hs-source-dirs:
+    pp
+  build-depends:
+    base < 5, persistent-th-rewrite, ghc, ghc-exactprint
+  default-language:
+    Haskell2010
+
+-- executable test
+--   main-is:
+--     Main.hs
+--   hs-source-dirs:
+--     exe
+--   ghc-options:
+--     -fplugin=GHC.Plugin.PersistentThRewrite
+--   build-depends:
+--     base < 5, lens-th-rewrite, lens
+--   default-language:
+--     Haskell2010
