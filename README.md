@@ -1,15 +1,13 @@
 persistent-th-rewrite
 =======================
 
-A GHC plugin that rewrites TH splices into regular Haskell functions.
+A GHC preprocessor that rewrites persistent TH splices into regular Haskell functions and types.
 
 ### Usage
-```haskell
-build-depends: persistent-th-rewrite
-ghc-options: -fplugin=GHC.Plugin.PersistentThRewrite
-```
 
-### Operation
+Add `{-# options_ghc -F -Fpgm=persistent-th-rewrite-pp #-}`
+
+### Usage
 
 ```haskell
 {-# LANGUAGE GADTs                      #-}
@@ -24,10 +22,8 @@ import Database.Persist.Sqlite
 import Control.Monad.IO.Class (liftIO)
 
 mkPersist sqlSettings [persistLowerCase|
-Person
-    name String
-    age Int
-    deriving Show
+Account
+    email Text
 |]
 ```
 
@@ -35,68 +31,56 @@ becomes
 
 ```haskell
 {-# LANGUAGE TypeFamilies, GeneralizedNewtypeDeriving, OverloadedStrings, GADTs #-}
-import Database.Persist
-import Database.Persist.Sqlite
-import Control.Monad.IO.Class (liftIO)
-import Control.Applicative
+instance PersistEntity Account where
+  type PersistEntityBackend Account = SqlBackend
+  data Unique Account
+  newtype Key Account = AccountKey {unAccountKey :: (BackendKey SqlBackend)}
+    deriving newtype (Show,
+                      Read,
+                      Eq,
+                      Ord,
+                      PathPiece,
+                      ToHttpApiData,
+                      FromHttpApiData,
+                      PersistField,
+                      PersistFieldSql,
+                      ToJSON,
+                      FromJSON)
 
-data Person = Person
-    { personName :: !String
-    , personAge :: !Int
-    }
-  deriving Show
+  data EntityField Account typ
+     = typ ~ Key Account => AccountId
+     | typ ~ Text => AccountEmail
 
-type PersonId = Key Person
+  keyToValues               = undefined
+  keyFromValues             = undefined
+  entityDef                 = undefined
+  toPersistFields           = undefined
+  fromPersistValues         = undefined
+  persistUniqueToFieldNames = undefined
+  persistUniqueToValues     = undefined
+  persistUniqueKeys         = undefined
+  persistFieldDef           = undefined
+  persistIdField            = undefined
+  fieldLens                 = undefined
 
-instance PersistEntity Person where
-    newtype Key Person = PersonKey (BackendKey SqlBackend)
-        deriving (PersistField, Show, Eq, Read, Ord)
-    -- A Generalized Algebraic Datatype (GADT).
-    -- This gives us a type-safe approach to matching fields with
-    -- their datatypes.
-    data EntityField Person typ where
-        PersonId   :: EntityField Person PersonId
-        PersonName :: EntityField Person String
-        PersonAge  :: EntityField Person Int
+instance ToBackendKey SqlBackend Account where
+  toBackendKey = undefined
+  fromBackendKey = undefined
 
-    data Unique Person
-    type PersistEntityBackend Person = SqlBackend
+instance TypeError (NoUniqueKeysError Account) => OnlyOneUniqueKey Account where
+  onlyUniqueP _ = undefined
 
-    toPersistFields (Person name age) =
-        [ SomePersistField name
-        , SomePersistField age
-        ]
+instance TypeError (MultipleUniqueKeysError Account) => AtLeastOneUniqueKey Account where
+  requireUniquesP _ = undefined
 
-    fromPersistValues [nameValue, ageValue] = Person
-        <$> fromPersistValue nameValue
-        <*> fromPersistValue ageValue
-    fromPersistValues _ = Left "Invalid fromPersistValues input"
+instance PersistField Account where
+  toPersistValue = undefined
+  fromPersistValue = undefined
 
-    -- Information on each field, used internally to generate SQL statements
-    persistFieldDef PersonId = FieldDef
-        (HaskellName "Id")
-        (DBName "id")
-        (FTTypeCon Nothing "PersonId")
-        SqlInt64
-        []
-        True
-        NoReference
-    persistFieldDef PersonName = FieldDef
-        (HaskellName "name")
-        (DBName "name")
-        (FTTypeCon Nothing "String")
-        SqlString
-        []
-        True
-        NoReference
-    persistFieldDef PersonAge = FieldDef
-        (HaskellName "age")
-        (DBName "age")
-        (FTTypeCon Nothing "Int")
-        SqlInt64
-        []
-        True
-        NoReference
+instance PersistFieldSql Account where sqlType _ = SqlString
+
+data Account   = Account {accountEmail :: !Text}
+type AccountId = Key Account
 ```
 
 ### Why
@@ -106,15 +90,8 @@ This can be a non-starter for many projects.
 
 ### Limitations
 
-Only `share` is supported.
-
-### Preprocessor
-
-It is possible to use the executable bundled with this library as a pre-processor.
-
-Add `{-# options_ghc -F -Fpgm=persistent-th-rewrite-pp #-}`
+Only `share` is supported. Most functions are undefined. Implementations can be provided, but the specific use case is for front-end code that needs the data families generated, but not the member functions of `PersistEntity`.
 
 ### Long term
 
 GHC should split up Template Haskell into pure and impure variants. Allowing pure TH code to be executed on the host, and impure on the target.
-

@@ -27,34 +27,12 @@ build-type:
 extra-source-files:
   CHANGELOG.md
 
-library
-  exposed-modules:
-    GHC.Plugin.PersistentThRewrite
-  build-depends:
-    base, lens, ghc, ghc-exactprint
-  hs-source-dirs:
-    src
-  default-language:
-    Haskell2010
-
-executable persistent-th-rewrite-pp
+executable pp
   main-is:
     Main.hs
   hs-source-dirs:
     pp
   build-depends:
-    base < 5, persistent-th-rewrite, ghc, ghc-exactprint
+    base < 5, split
   default-language:
     Haskell2010
-
--- executable test
---   main-is:
---     Main.hs
---   hs-source-dirs:
---     exe
---   ghc-options:
---     -fplugin=GHC.Plugin.PersistentThRewrite
---   build-depends:
---     base < 5, lens-th-rewrite, lens
---   default-language:
---     Haskell2010
