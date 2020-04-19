@@ -5,7 +5,7 @@ A GHC preprocessor that rewrites persistent TH splices into regular Haskell func
 
 ### Usage
 
-Add `{-# options_ghc -F -Fpgm=persistent-th-rewrite-pp #-}`
+Add `{-# options_ghc -F -pgmF=persistent-th-rewrite-pp #-}`
 
 ### Usage
 

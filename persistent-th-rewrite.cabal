@@ -27,7 +27,7 @@ build-type:
 extra-source-files:
   CHANGELOG.md
 
-executable pp
+executable persistent-th-rewrite-pp
   main-is:
     Main.hs
   hs-source-dirs:
