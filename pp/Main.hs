@@ -18,7 +18,9 @@ main = do
       go input output
 
 go :: String -> String -> IO ()
-go input output = writeFile output (genAll input)
+go input output = do
+  writeFile output =<<
+    rewrite <$> readFile input
 
 rewrite :: String -> String
 rewrite str = do
@@ -59,7 +61,7 @@ data Rec
   } deriving (Eq)
 
 instance Show Rec where
-  show Rec {..} = unlines [ "data " <> recName, recBody ]
+  show Rec {..} = unlines [ "data " <> recName <> " = " <> recName, recBody ]
     where
       recBody = "  { " ++ genFields ++ "  } deriving (Eq, Show)"
       genFields = unlines $ commaify (fmap show recFields)
@@ -107,6 +109,7 @@ process (recName:fields) = Just Rec {..}
     recFields = mapMaybe processField fields
     processField field
       | isPrefixOf "Unique" field = Nothing
+      | isPrefixOf "Foreign" field = Nothing
       | isPrefixOf "pk" field = do
           let fieldName = lowerCase recName <> "Pk"
               fieldType = words field !! 1
@@ -150,7 +153,7 @@ genInstances :: Rec -> String
 genInstances record@Rec {..} =
   unlines
   [ printf "instance PersistEntity %s where" recName
-  , printf "data Unique %s" recName
+  , printf "  data Unique %s" recName
   , printf "  type PersistEntityBackend %s = SqlBackend" recName
   , printf "  newtype Key %s = %sKey {un%sKey :: (BackendKey SqlBackend)}"
       recName recName recName
@@ -181,6 +184,8 @@ genInstances record@Rec {..} =
   , printf "instance PersistFieldSql %s where sqlType _ = SqlString" recName
   , printf "instance ToBackendKey SqlBackend %s where\n  toBackendKey = undefined\n  fromBackendKey = undefined" recName
   , printf "instance PersistField %s where\n  toPersistValue = undefined\n  fromPersistValue = undefined" recName
+  , printf "instance OnlyOneUniqueKey %s where\n  onlyUniqueP _ = undefined" recName
+  , printf "instance AtLeastOneUniqueKey %s where\n  requireUniquesP _ = undefined" recName
   ]
 
 genEntityfield Rec {..} =
